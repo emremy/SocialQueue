@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/emremy/socialqueue/internal/config"
-	"github.com/emremy/socialqueue/internal/database"
-	"github.com/emremy/socialqueue/internal/redis"
+	"github.com/emremy/socialqueue/internal/platform/database"
+	"github.com/emremy/socialqueue/internal/platform/redis"
 	"github.com/emremy/socialqueue/internal/transport/httpserver"
 )
 

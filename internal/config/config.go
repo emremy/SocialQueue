@@ -19,6 +19,10 @@ type Config struct {
 	RedisAddr     string
 	RedisPassword string
 	RedisDB       string
+
+	JwtSecret       string
+	AccessTokenTTL  string
+	RefreshTokenTTL string
 }
 
 func Load() *Config {
@@ -37,6 +41,10 @@ func Load() *Config {
 		RedisAddr:     getEnv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       getEnv("REDIS_DB", "0"),
+
+		JwtSecret:       getEnv("JWT_SECRET", "change-me-in-development"),
+		AccessTokenTTL:  getEnv("ACCESS_TOKEN_TTL", "15m"),
+		RefreshTokenTTL: getEnv("REFRESH_TOKEN_TTL", "720h"),
 	}
 
 	return cfg
