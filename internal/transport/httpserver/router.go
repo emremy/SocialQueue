@@ -7,15 +7,35 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+
+	appauth "github.com/emremy/socialqueue/internal/app/auth"
+
+	authhttp "github.com/emremy/socialqueue/internal/transport/httpserver/auth"
 	// "github.com/emremy/socialqueue/internal/queue/jobs"
 )
 
-func CreateRouter(db *gorm.DB, redisClient *redis.Client) http.Handler {
+func CreateRouter(db *gorm.DB, redisClient *redis.Client, authStore *appauth.Store, tokenManager *appauth.TokenManager) http.Handler {
 	r := chi.NewRouter()
 
 	// publisher := jobs.NewPublisher(redisClient)
 
 	registerBaseRoutes(r)
+
+	authService := appauth.NewService(authStore, tokenManager)
+	authHandler := authhttp.NewHandler(authService)
+
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", authHandler.Register)
+		r.Post("/login", authHandler.Login)
+		r.Post("/refresh", authHandler.Refresh)
+		r.Post("/logout", authHandler.Logout)
+
+		r.Group(func(r chi.Router) {
+			r.Use(authhttp.AuthMiddleware(tokenManager))
+
+			r.Get("/me", authHandler.Me)
+		})
+	})
 
 	return r
 }

@@ -44,3 +44,13 @@ func NewAuthResponse(result appauth.AuthResult) AuthResponse {
 		},
 	}
 }
+
+func NewUserResponse(user appauth.User) UserResponse {
+	return UserResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		FullName:  user.FullName,
+		Status:    user.Status,
+		CreatedAt: user.CreatedAt,
+	}
+}

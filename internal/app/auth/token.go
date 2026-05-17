@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type TokenManager struct {
@@ -16,7 +17,7 @@ type TokenManager struct {
 }
 
 type AccessTokenClaims struct {
-	UserID string `json:"user_id"`
+	UserID uuid.UUID `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
@@ -28,20 +29,20 @@ func CreateTokenManager(secret string, accessTokenTTL time.Duration, refreshTTL 
 	}
 }
 
-func (m *TokenManager) GenerateAccessToken(userID string) (string, time.Time, error) {
+func (m *TokenManager) GenerateAccessToken(userID uuid.UUID) (string, time.Time, error) {
 	now := time.Now().UTC()
 	expires := now.Add(m.accessTokenTTL)
 
 	claims := AccessTokenClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   userID,
+			Subject:   userID.String(),
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(expires),
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	signedToken, err := token.SignedString(m.secret)
 	if err != nil {
@@ -52,7 +53,7 @@ func (m *TokenManager) GenerateAccessToken(userID string) (string, time.Time, er
 
 func (m *TokenManager) VerifyAccessToken(tokenString string) (*AccessTokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &AccessTokenClaims{}, func(t *jwt.Token) (any, error) {
-		if t.Method != jwt.SigningMethodES256 {
+		if t.Method != jwt.SigningMethodHS256 {
 			return nil, ErrInvalidToken
 		}
 
@@ -65,10 +66,6 @@ func (m *TokenManager) VerifyAccessToken(tokenString string) (*AccessTokenClaims
 
 	claims, ok := token.Claims.(*AccessTokenClaims)
 	if !ok || !token.Valid {
-		return nil, ErrInvalidToken
-	}
-
-	if claims.UserID == "" {
 		return nil, ErrInvalidToken
 	}
 

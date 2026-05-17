@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 
+	appauth "github.com/emremy/socialqueue/internal/app/auth"
 	"github.com/emremy/socialqueue/internal/config"
 	"github.com/emremy/socialqueue/internal/platform/database"
 	"github.com/emremy/socialqueue/internal/platform/redis"
@@ -18,6 +20,15 @@ func main() {
 	slog.SetDefault(logger)
 
 	cfg := config.Load()
+	accessTTL, err := time.ParseDuration(cfg.AccessTokenTTL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	refreshTTL, err := time.ParseDuration(cfg.RefreshTokenTTL)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	db, err := database.NewPostgres(cfg)
 	if err != nil {
@@ -34,7 +45,15 @@ func main() {
 
 	redisClient := redis.NewClient(cfg.RedisAddr)
 
-	router := httpserver.CreateRouter(db, redisClient)
+	authStore := appauth.NewStore(db)
+
+	tokenManager := appauth.CreateTokenManager(
+		cfg.JwtSecret,
+		accessTTL,
+		refreshTTL,
+	)
+
+	router := httpserver.CreateRouter(db, redisClient, authStore, tokenManager)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.AppPort),
